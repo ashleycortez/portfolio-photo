@@ -31,16 +31,13 @@
         this._name = pluginName;
 
         // Consolidate common URL components
-        this.defaultParams = {
-          format: 'json',
-          api_key: this.settings.apiKey,
-          nojsoncallback: true,
-        };
         this.client = axios.create({
           baseURL: 'https://api.flickr.com/services/rest/',
-          paramsSerializer: function (params) {
-            return $.param($.extend({}, this.defaultParams, params));
-          }.bind(this),
+          params: {
+            format: 'json',
+            api_key: this.settings.apiKey,
+            nojsoncallback: true,
+          },
         });
 
         this._printError = function(error) {
