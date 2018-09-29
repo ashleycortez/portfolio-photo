@@ -5,8 +5,6 @@
 <script src="js/bootstrap-image-gallery.js"></script>
 <script src="js/flickr-jquery.js"></script>
 <script>
-    var apiKey = '9dcfde14fdcc421c2f3bcaea8d78d1c1';
-    var userId = '159715605@N08';
     $(function() {
 
         if (location.hash.slice(1) != "") {
@@ -15,8 +13,8 @@
             $('.gallery-container').empty();
             $("#" + location.hash.slice(1)).toggleClass("sidebar-selected")
             $('.gallery').flickr({
-                apiKey: apiKey,
-                userId: userId,
+                apiKey: '{{ site.data.flickr.api_key }}',
+                userId: '{{ site.data.flickr.user_id }}',
                 photosetId: $("#" + location.hash.slice(1)).data("id"),
                 loadingSpeed: 20,
             });
@@ -36,8 +34,8 @@
             $('.cat-link').removeClass("sidebar-selected")
             $("#" + location.hash.slice(1)).toggleClass("sidebar-selected")
             $('.gallery').flickr({
-                apiKey: apiKey,
-                userId: userId,
+                apiKey: '{{ site.data.flickr.api_key }}',
+                userId: '{{ site.data.flickr.user_id }}',
                 photosetId: $("#" + location.hash.slice(1)).data("id"),
                 loadingSpeed: 20,
             });
