@@ -21,13 +21,7 @@
             loadingSpeed: 38,
             photosLimit: 30
         },
-        apiUrl = 'https://api.flickr.com/services/rest/',
-        commonParams = '&format=json&api_key=9dcfde14fdcc421c2f3bcaea8d78d1c1&nojsoncallback=true',
         photos = [];
-
-    var client = axios.create({
-      // baseURL: 'https://api.flickr.com/services/rest/',
-    });
 
     // The actual plugin constructor
     function Plugin(element, options) {
@@ -36,7 +30,21 @@
         this._defaults = defaults;
         this._name = pluginName;
 
-        this._printError = function() {
+        // Consolidate common URL components
+        this.defaultParams = {
+          format: 'json',
+          api_key: this.settings.apiKey,
+          nojsoncallback: true,
+        };
+        this.client = axios.create({
+          baseURL: 'https://api.flickr.com/services/rest/',
+          paramsSerializer: function (params) {
+            return $.param($.extend({}, this.defaultParams, params));
+          }.bind(this),
+        });
+
+        this._printError = function(error) {
+            console.log(error);
             this.element.find('.gallery-container').append($("<div></div>", { "class": "col-lg-12 col-lg-offset-1" })
                 .append($("<div></div>", { "class": "error-wrapper" })
                     .append($("<span></span>", { "class": "label label-danger error" })
@@ -68,8 +76,17 @@
         }
 
         this._fetchPhotoset = function(photosetId) {
-         var metadata = client.get(apiUrl + '?method=flickr.photosets.getInfo&photoset_id=' + photosetId + '&user_id=' + this.settings.userId + commonParams)
+          // Cache client here so we don't need to litter `.bind(this)` everywhere
+          var client = this.client;
+
+          var metadataParams = {
+            method: 'flickr.photosets.getInfo',
+            photoset_id: photosetId,
+            user_id: this.settings.userId,
+          };
+          var metadata = client.get('', {params: metadataParams})
             .then(function (response) {
+              console.log(response);
               var result = response.data.photoset;
               return {
                 title: result.title._content,
@@ -77,11 +94,19 @@
               };
             });
 
-          var buildings = client.get(apiUrl + '?method=flickr.photosets.getPhotos&photoset_id=' + photosetId + commonParams)
+          var buildingsParams = {
+            method: 'flickr.photosets.getPhotos',
+            photoset_id: photosetId,
+          };
+          var buildings = client.get('', {params: buildingsParams})
             .then(function (response) {
               var photos = response.data.photoset.photo;
               var promises = photos.map(function(photo) {
-                return client.get(apiUrl + '?photo_id=' + photo.id + '&method=flickr.photos.getInfo' + commonParams)
+                var photoParams = {
+                  method: 'flickr.photos.getInfo',
+                  photo_id: photo.id,
+                };
+                return client.get('', {params: photoParams})
                   .then(function(result) {
                     var photo = result.data.photo;
                     var tags = photo.tags.tag.map(function(tag) { return tag.raw });
@@ -123,14 +148,10 @@
         };
 
         this._flickrInit = function () {
-            this._fetchPhotoset(this.settings.photosetId)
-                .then(function(photoset) {
-                  this._printGallery(photoset);
-                }.bind(this))
-                .catch(function(error) {
-                  console.log(error);
-                  this._printError();
-                }.bind(this));
+          // We must rebind `this` or else it will refer to the promise, not the plugin
+          this._fetchPhotoset(this.settings.photosetId)
+            .then(this._printGallery.bind(this))
+            .catch(this._printError.bind(this));
         };
 
         // Init
