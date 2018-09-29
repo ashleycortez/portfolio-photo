@@ -1,9 +1,12 @@
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 <script src="js/blueimp-gallery.js"></script>
 <script src="js/imagesloaded.pkgd.min.js"></script>
 <script src="js/jquery.blueimp-gallery.js"></script>
 <script src="js/bootstrap-image-gallery.js"></script>
 <script src="js/flickr-jquery.js"></script>
 <script>
+    var apiKey = '9dcfde14fdcc421c2f3bcaea8d78d1c1';
+    var userId = '159715605@N08';
     $(function() {
 
         if (location.hash.slice(1) != "") {
@@ -12,9 +15,10 @@
             $('.gallery-container').empty();
             $("#" + location.hash.slice(1)).toggleClass("sidebar-selected")
             $('.gallery').flickr({
-                apiKey: '9dcfde14fdcc421c2f3bcaea8d78d1c1',
+                apiKey: apiKey,
+                userId: userId,
                 photosetId: $("#" + location.hash.slice(1)).data("id"),
-                loadingSpeed: 20
+                loadingSpeed: 20,
             });
             $.extend(blueimp.Gallery.prototype.options, {
                 useBootstrapModal: false,
@@ -32,9 +36,10 @@
             $('.cat-link').removeClass("sidebar-selected")
             $("#" + location.hash.slice(1)).toggleClass("sidebar-selected")
             $('.gallery').flickr({
-                apiKey: '69b2be122a9b287e85d377673edef6e6',
+                apiKey: apiKey,
+                userId: userId,
                 photosetId: $("#" + location.hash.slice(1)).data("id"),
-                loadingSpeed: 20
+                loadingSpeed: 20,
             });
             $.extend(blueimp.Gallery.prototype.options, {
                 useBootstrapModal: false,
