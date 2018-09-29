@@ -1,6 +1,6 @@
-- name: Test Album 1
+- name: Test_Album_1
   key: 72157701606362594
-- name: Test Album 2
+- name: Test_Album_2
   key: 72157673924401648
-- name: Test Album 3
+- name: Test_Album_3
   key: 72157701606354944
