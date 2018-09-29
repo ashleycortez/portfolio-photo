@@ -1,18 +1,6 @@
-- name: Architecture
-  key: 72157633566493386
-- name: Animals
-  key: 72157633566493386
-- name: Nature
-  key: 72157633532267229
-- name: Places
-  key: 72157633566493386
-- name: Landscapes
-  key: 72157633566493386
-- name: Sky
-  key: 72157633566493386
-- name: Lights
-  key: 72157639277651254
-- name: People
-  key: 72157635243918659
-- name: Miscellaneous 
-  key: 72157633566493386
+- name: Test Album 1
+  key: 72157701606362594
+- name: Test Album 2
+  key: 72157673924401648
+- name: Test Album 3
+  key: 72157701606354944
