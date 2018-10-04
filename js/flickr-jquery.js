@@ -49,7 +49,7 @@
         };
 
         this._printGallery = function(photoset) {
-          var galleryContainer = this.element;
+          var galleryContainer = this.element.find('.gallery-container');
           galleryContainer.append($('<h1></h1>').text(photoset.title));
           galleryContainer.append($('<p></p>').text(photoset.desc));
           $.each(Object.keys(photoset.buildings), function(index, building) {
