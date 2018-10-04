@@ -15,12 +15,12 @@
     var pluginName = "flickr",
         defaults = {
             apiKey: "",
+            userId: "",
             photosetId: "",
             errorText: "Error generating gallery.",
             loadingSpeed: 38,
             photosLimit: 30
         },
-        apiUrl = 'https://api.flickr.com/services/rest/',
         photos = [];
 
     // The actual plugin constructor
@@ -30,85 +30,125 @@
         this._defaults = defaults;
         this._name = pluginName;
 
-       
+        // Consolidate common URL components
+        this.client = axios.create({
+          baseURL: 'https://api.flickr.com/services/rest/',
+          params: {
+            format: 'json',
+            api_key: this.settings.apiKey,
+            nojsoncallback: true,
+          },
+        });
 
-        this._printError = function() {
+        this._printError = function(error) {
+            console.log(error);
             this.element.find('.gallery-container').append($("<div></div>", { "class": "col-lg-12 col-lg-offset-1" })
                 .append($("<div></div>", { "class": "error-wrapper" })
                     .append($("<span></span>", { "class": "label label-danger error" })
                         .html(this.settings.errorText))));
         };
 
-        this._flickrAnimate = function() {
-            this.element.find('.gallery-container img').each($.proxy(function(index, el) {
-                var image = el;
-                setTimeout(function() {
-                    $(image).parent().fadeIn();
-                }, this.settings.loadingSpeed * index);
-            }, this));
-        };
+        this._printGallery = function(photoset) {
+          var galleryContainer = this.element;
+          galleryContainer.append($('<h1></h1>').text(photoset.title));
+          galleryContainer.append($('<p></p>').text(photoset.desc));
+          $.each(Object.keys(photoset.buildings), function(index, building) {
+            var buildingDiv = $('<div></div>', {'class': 'building'});
+            buildingDiv.append($('<h3></h3>', {'class': 'building-title'}).text(building));
+            var photoList = $('<ul></ul>', {'class': 'photo-list'});
+            $.each(photoset.buildings[building], function(idx, photo) {
+              var photoElem = $('<li></li>', {'class': 'photo-elem'});
+              photoElem.append($('<p></p>').text(photo.title));
+              photoElem.append($('<img>', {src: photo.full}));
+              if (photo.description) {
+                photoElem.append($('<p></p>').text(photo.description));
+              }
+              photoList.append(photoElem);
+            })
+            buildingDiv.append(photoList);
+            galleryContainer.append(buildingDiv);
+          });
 
-        this._printGallery = function(photos) {
-           
-            var element = this.element.find('.gallery-container');
-            $.each(photos, function(key, photo) {
-                var img = $('<img>', { 'class': 'thumb img-thumbnail img-responsive', src: photo.thumbnail });
-                element.append($('<div></div>', { 'class': 'col-lg-2 col-md-2 col-xs-6 col-center' })
-                    .append($('<a></a>', { 'class': '', href: photo.href, 'data-gallery': '' }).hide()
-                        .append(img)));
+          $('.spinner-wrapper').hide();
+        }
+
+        this._fetchPhotoset = function(photosetId) {
+          // Cache client here so we don't need to litter `.bind(this)` everywhere
+          var client = this.client;
+
+          var metadataParams = {
+            method: 'flickr.photosets.getInfo',
+            photoset_id: photosetId,
+            user_id: this.settings.userId,
+          };
+          var metadata = client.get('', {params: metadataParams})
+            .then(function (response) {
+              console.log(response);
+              var result = response.data.photoset;
+              return {
+                title: result.title._content,
+                desc: result.description._content,
+              };
             });
-            $('.spinner-wrapper').hide();
-            element.imagesLoaded().done($.proxy(this._flickrAnimate, this))
-                
-        };
 
-        this._flickrPhotoset = function(photoset) {
-            var _this = this;
-            
-            photos[photoset.id] = [];
-            $.each(photoset.photo, function(key, photo) {
-                // Limit number of photos.
-                if(key >= _this.settings.photosLimit) {
-                    return false;
-                }
-
-                photos[photoset.id][key] = {
-                    thumbnail: 'http://farm' + photo.farm + '.static.flickr.com/' + photo.server + '/' + photo.id + '_' + photo.secret + '_q.jpg',
-                    href: 'http://farm' + photo.farm + '.static.flickr.com/' + photo.server + '/' + photo.id + '_' + photo.secret + '_b.jpg'
+          var buildingsParams = {
+            method: 'flickr.photosets.getPhotos',
+            photoset_id: photosetId,
+          };
+          var buildings = client.get('', {params: buildingsParams})
+            .then(function (response) {
+              var photos = response.data.photoset.photo;
+              var promises = photos.map(function(photo) {
+                var photoParams = {
+                  method: 'flickr.photos.getInfo',
+                  photo_id: photo.id,
                 };
+                return client.get('', {params: photoParams})
+                  .then(function(result) {
+                    var photo = result.data.photo;
+                    var tags = photo.tags.tag.map(function(tag) { return tag.raw });
+                    return {
+                      title: photo.title._content,
+                      description: photo.description._content,
+                      tags: tags,
+                      thumbnail: 'http://farm' + photo.farm + '.static.flickr.com/' + photo.server + '/' + photo.id + '_' + photo.secret + '_q.jpg',
+                      full: 'http://farm' + photo.farm + '.static.flickr.com/' + photo.server + '/' + photo.id + '_' + photo.secret + '_b.jpg',
+                    };
+                  });
+              });
+              return Promise.all(promises);
+            })
+            .then(function(photos) {
+              var buildingsRes = {};
+              for (var i = photos.length - 1; i >= 0; i--) {
+                var photo = photos[i];
+                for (var j = photo.tags.length - 1; j >= 0; j--) {
+                  var tag = photo.tags[j];
+                  if (tag.substring(0, 5) == 'bldg:') {
+                    var bldg = tag.substring(5, tag.length);
+                    if (!buildingsRes.hasOwnProperty(bldg)) {
+                      buildingsRes[bldg] = [];
+                    }
+                    buildingsRes[bldg].push(photo);
+                  }
+                }
+              }
+              return buildingsRes;
             });
 
-            this._printGallery(photos[photoset.id]);
-        };
-
-        this._onFlickrResponse = function(response) {
-            if(response.stat === "ok") {
-                 this._flickrPhotoset(response.photoset);
-            }
-            else {
-                this._printError();
-            }
-        };
-
-        this._flickrRequest = function(method, data) {
-            var url = apiUrl + "?format=json&jsoncallback=?&method=" + method + "&api_key=" + this.settings.apiKey;
-
-            $.each(data, function(key, value) {
-                url += "&" + key + "=" + value;
-            });
-
-            $.ajax({
-                dataType: "json",
-                url: url,
-                context: this,
-                success: this._onFlickrResponse
+          return Promise.all([metadata, buildings])
+            .then(function(results) {
+              var photoset = results[0];
+              photoset['buildings'] = results[1];
+              return photoset;
             });
         };
 
         this._flickrInit = function () {
-            this._flickrRequest('flickr.photosets.getPhotos', {
-                photoset_id: this.settings.photosetId
-            });
+          // We must rebind `this` or else it will refer to the promise, not the plugin
+          this._fetchPhotoset(this.settings.photosetId)
+            .then(this._printGallery.bind(this))
+            .catch(this._printError.bind(this));
         };
 
         // Init
