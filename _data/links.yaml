@@ -1,12 +1,10 @@
-- name: Personal Page
-  favicon: fa-home
-  url: http://jpdias.github.io
-- name: Twitter
-  favicon: fa-twitter
+
+- name: Email
+  favicon: fa-envelope-open
   url: http://twitter.com/jpd1as
 - name: Flickr
   favicon: fa-flickr
-  url: http://www.flickr.com/photos/joaopedrodias/
+  url: http://www.flickr.com/photos/doctorcasino/
 - name: Instagram
   favicon: fa-instagram
-  url: http://instagram.com/jpd1as
+  url: http://instagram.com/doctorcasino
